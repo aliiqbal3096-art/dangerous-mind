@@ -1,0 +1,69 @@
+
+[
+  {
+    "id": "DM-01",
+    "name": "STEVE JOBS",
+    "subtitle": "The reality distortion field",
+    "image": "/images/steve-jobs.jpg.png",
+    "years": "1955–2011",
+    "field": "TECHNOLOGY / LEADERSHIP",
+    "text": "A study of product vision, persuasion, intense standards, and the tension between creative ambition and the human cost of demanding leadership.",
+    "lesson": "A compelling vision can move people—but how we treat people matters, too.",
+    "caution": "This profile explores public accounts and leadership themes; it is not a diagnosis or an endorsement of every reported behaviour."
+  },
+  {
+    "id": "DM-02",
+    "name": "SUN TZU",
+    "subtitle": "The psychology of strategy",
+    "image": "/images/sun-tzu.jpg.png",
+    "years": "Traditionally dated to 6th–5th century BCE",
+    "field": "STRATEGY / CONFLICT",
+    "text": "The ancient strategist is associated with preparation, information, timing, adaptability, and winning through understanding rather than force alone.",
+    "lesson": "Know the conditions, understand incentives, and avoid unnecessary conflict.",
+    "caution": "The historical details of Sun Tzu’s life remain uncertain; ideas are interpreted from The Art of War and its tradition."
+  },
+  {
+    "id": "DM-03",
+    "name": "NICCOLÒ MACHIAVELLI",
+    "subtitle": "The psychology of power",
+    "image": "/images/machiavelli.jpg.png",
+    "years": "1469–1527",
+    "field": "POLITICAL THOUGHT / POWER",
+    "text": "Machiavelli examined how leaders preserve power, manage reputation, respond to fear, and navigate the gap between public appearance and political reality.",
+    "lesson": "Study power as it operates—not only as people say it should operate.",
+    "caution": "His work is debated and often oversimplified; analysis of power is not the same as advice to manipulate others."
+  },
+  {
+    "id": "DM-04",
+    "name": "VIKTOR FRANKL",
+    "subtitle": "The search for meaning",
+    "image": "/images/viktor-frankl.jpg.png",
+    "years": "1905–1997",
+    "field": "PSYCHIATRY / MEANING",
+    "text": "A psychiatrist and Holocaust survivor whose work explored meaning, responsibility, and the possibility of choosing one’s stance in difficult circumstances.",
+    "lesson": "Meaning can help people orient themselves even when circumstances cannot be fully controlled.",
+    "caution": "Frankl’s experiences should be treated with historical care; his ideas are not a promise that suffering is easily overcome."
+  },
+  {
+    "id": "DM-05",
+    "name": "HANNAH ARENDT",
+    "subtitle": "Thinking, judgement, responsibility",
+    "image": "/images/hannah-arendt.jpg.png",
+    "years": "1906–1975",
+    "field": "POLITICAL THEORY / ETHICS",
+    "text": "Arendt investigated totalitarianism, authority, political action, and the importance of thinking and judgement under systems that pressure people to conform.",
+    "lesson": "Question the habits and institutions that make people stop judging for themselves.",
+    "caution": "Her arguments are influential and contested; this summary is an introduction, not a substitute for her original work."
+  },
+  {
+    "id": "DM-06",
+    "name": "CARL GUSTAV JUNG",
+    "subtitle": "The shadow and the unconscious",
+    "image": "/images/carl-jung.jpg.png",
+    "years": "1875–1961",
+    "field": "PSYCHOLOGY / SYMBOLS",
+    "text": "Jung’s theories explored dreams, symbols, archetypes, and the shadow—the parts of ourselves we may deny or struggle to recognise.",
+    "lesson": "Self-understanding includes noticing the traits we would rather not see.",
+    "caution": "Many Jungian concepts are interpretive and debated; they should not be treated as settled diagnostic science."
+  }
+]
