@@ -1,10 +1,11 @@
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import type { FormEvent } from "react";
 import "./App.css";
 
 type ModalKind = "login" | "vault" | "case" | null;
 type WorldId = "inner" | "abyss" | "archive" | "unknown";
+type AuthMode = "login" | "register";
 
 type MindCard = {
   id: string;
@@ -48,6 +49,21 @@ type World = {
   subtitle: string;
   description: string;
   questions: string[];
+};
+
+type AuthUser = {
+  id: string;
+  name: string;
+  email: string;
+  createdAt?: string;
+};
+
+type SavedReflection = {
+  id: string;
+  world: string;
+  question: string;
+  answer: string;
+  savedAt: string;
 };
 
 const cases: CaseFile[] = [
@@ -201,9 +217,9 @@ const principles = [
 const mindProfiles: Record<string, MindProfile> = {
   "DM-01": {
     biography:
-      "Steve Jobs (1955–2011) co-founded Apple and became one of the most visible figures in personal computing, animated by a belief that technology and design should feel integrated rather than separate. His career also included conflict, setbacks, a period away from Apple, and a return that reshaped the company.",
+      "Steve Jobs (1955–2011) co-founded Apple and became one of the most visible figures in personal computing. His career included innovation, conflict, setbacks, a period away from Apple, and a return that reshaped the company.",
     context:
-      "Accounts of Jobs describe an unusually persuasive product storyteller and demanding leader. The phrase “reality distortion field” was used by colleagues to describe his ability to make ambitious outcomes seem possible. It is a descriptive phrase, not a clinical term.",
+      "The phrase “reality distortion field” was used by colleagues to describe Jobs's ability to make ambitious outcomes seem possible. It is a descriptive phrase, not a clinical term.",
     keyIdeas: [
       "Start with the experience people will have, not only the technology behind it.",
       "A clear story can align a team around a difficult goal.",
@@ -212,10 +228,10 @@ const mindProfiles: Record<string, MindProfile> = {
     works: [
       "Apple Macintosh and later product launches",
       "The NeXT chapter and Pixar leadership",
-      "The 2005 Stanford commencement address (public speech)",
+      "The 2005 Stanford commencement address",
     ],
     influence:
-      "Jobs influenced product design, consumer technology, brand storytelling, and the expectation that hardware and software should work as a coherent experience. His legacy is mixed: celebrated innovation alongside criticism of his management style.",
+      "Jobs influenced product design, consumer technology, brand storytelling, and the expectation that hardware and software should work as a coherent experience. His legacy includes both celebrated innovation and criticism of his management style.",
     questions: [
       "When does strong conviction become refusal to listen?",
       "Can a great result justify harmful treatment of a team?",
@@ -229,9 +245,9 @@ const mindProfiles: Record<string, MindProfile> = {
   },
   "DM-02": {
     biography:
-      "Sun Tzu is the traditional name associated with The Art of War, a Chinese military treatise concerned with planning, intelligence, positioning, discipline, and the costs of conflict. The date, authorship, and details of his life remain uncertain, so legend and history should not be treated as identical.",
+      "Sun Tzu is the traditional name associated with The Art of War, a Chinese military treatise about planning, intelligence, positioning, discipline, and the costs of conflict. The date, authorship, and details of his life remain uncertain.",
     context:
-      "The text is not simply a manual for defeating an enemy. It repeatedly emphasizes understanding conditions, gathering information, adapting to circumstances, and avoiding wasteful conflict where possible.",
+      "The Art of War emphasizes understanding conditions, gathering information, adapting to circumstances, and avoiding wasteful conflict where possible.",
     keyIdeas: [
       "Know your own strengths and limitations as carefully as you study the situation around you.",
       "Information and preparation can prevent unnecessary confrontation.",
@@ -242,7 +258,7 @@ const mindProfiles: Record<string, MindProfile> = {
       "Later commentaries and translations of the classical text",
     ],
     influence:
-      "The Art of War has been interpreted in military history, political strategy, business writing, and popular culture. Modern business analogies can be useful, but they should not erase the text's original military and historical setting.",
+      "The Art of War has been interpreted in military history, strategy, business writing, and popular culture. Modern business analogies can be useful, but should not erase the text's original military and historical setting.",
     questions: [
       "What information am I missing before making a decision?",
       "Is this conflict necessary, or is there a better route?",
@@ -255,11 +271,11 @@ const mindProfiles: Record<string, MindProfile> = {
   },
   "DM-03": {
     biography:
-      "Niccolò Machiavelli (1469–1527) was a Florentine diplomat, political thinker, and writer who lived through intense political instability. After the Medici returned to power, he lost his government position and wrote works that later became central to debates about leadership and political power.",
+      "Niccolò Machiavelli (1469–1527) was a Florentine diplomat, political thinker, and writer who lived through intense political instability. After the Medici returned to power, he lost his government position and wrote works central to debates about leadership and political power.",
     context:
-      "The Prince is often reduced to a slogan about manipulation. Machiavelli's writing is more complicated: it examines the gap between moral ideals and political pressures, and scholars continue to debate the purpose, tone, and intended audience of his work.",
+      "The Prince is often reduced to a slogan about manipulation. Machiavelli's writing examines the gap between moral ideals and political pressures, and scholars continue to debate its purpose and intended audience.",
     keyIdeas: [
-      "Political power must be studied as it actually operates, not only as people claim it should operate.",
+      "Political power must be studied as it operates, not only as people claim it should operate.",
       "Reputation, public perception, institutions, and circumstances shape leadership.",
       "A description of ruthless behaviour is not automatically an endorsement of it.",
     ],
@@ -279,11 +295,11 @@ const mindProfiles: Record<string, MindProfile> = {
   },
   "DM-04": {
     biography:
-      "Viktor Frankl (1905–1997) was an Austrian psychiatrist and Holocaust survivor. After surviving Nazi concentration camps, he became widely known for logotherapy, an approach that places the search for meaning at the centre of human motivation. His life and work must be read with care and historical seriousness.",
+      "Viktor Frankl (1905–1997) was an Austrian psychiatrist and Holocaust survivor. He became widely known for logotherapy, an approach that places the search for meaning at the centre of human motivation.",
     context:
-      "Frankl wrote about meaning, responsibility, and the possibility of taking a stance toward some circumstances that cannot be changed. This is not a claim that people can simply think their way out of trauma, nor that suffering is always meaningful or chosen.",
+      "Frankl wrote about meaning, responsibility, and the possibility of taking a stance toward some circumstances that cannot be changed. This does not mean people can simply think their way out of trauma.",
     keyIdeas: [
-      "Meaning may be found through work, relationships, values, and how a person responds to unavoidable circumstances.",
+      "Meaning may be found through work, relationships, values, and responses to unavoidable circumstances.",
       "Freedom and responsibility are connected; choices matter even when options are limited.",
       "Support, material conditions, and care remain important—meaning should never be used to blame people for suffering.",
     ],
@@ -293,7 +309,7 @@ const mindProfiles: Record<string, MindProfile> = {
       "The Will to Meaning",
     ],
     influence:
-      "Frankl's writing has influenced psychotherapy, existential thought, and public conversations about purpose. His memoir is powerful, but it is one person's account and should not be treated as a universal formula for survival.",
+      "Frankl's writing has influenced psychotherapy, existential thought, and conversations about purpose. His memoir is one person's account, not a universal formula for survival.",
     questions: [
       "What gives my current effort a sense of purpose?",
       "Which part of this situation can I influence, however slightly?",
@@ -307,9 +323,9 @@ const mindProfiles: Record<string, MindProfile> = {
   },
   "DM-05": {
     biography:
-      "Hannah Arendt (1906–1975) was a political theorist born in Germany who fled Nazi persecution and later wrote in the United States. Her work examined totalitarianism, political action, authority, freedom, and the responsibilities involved in thinking and judging in public life.",
+      "Hannah Arendt (1906–1975) was a political theorist born in Germany who fled Nazi persecution and later wrote in the United States. Her work examined totalitarianism, political action, authority, freedom, and responsibility.",
     context:
-      "Arendt's phrase “the banality of evil,” developed in her reporting and analysis of Adolf Eichmann's trial, remains debated. It was not a claim that Nazi crimes were trivial; it raised questions about thoughtlessness, bureaucratic systems, and ordinary participation in extraordinary wrongdoing.",
+      "Arendt's phrase “the banality of evil,” developed in her reporting and analysis of Adolf Eichmann's trial, raised questions about thoughtlessness, bureaucratic systems, and ordinary participation in wrongdoing. It was not a claim that Nazi crimes were trivial.",
     keyIdeas: [
       "Political judgement requires thinking beyond slogans and inherited rules.",
       "Bureaucratic systems can make responsibility feel distant or divided.",
@@ -322,7 +338,7 @@ const mindProfiles: Record<string, MindProfile> = {
       "Between Past and Future",
     ],
     influence:
-      "Arendt remains influential in political philosophy, civic theory, and debates about responsibility under authoritarian systems. Her interpretations, including her account of Eichmann, are still contested and should be approached through primary texts and scholarship.",
+      "Arendt remains influential in political philosophy, civic theory, and debates about responsibility under authoritarian systems. Her interpretations remain debated and should be approached through primary texts and scholarship.",
     questions: [
       "Am I thinking this through, or repeating what my group expects?",
       "Where does responsibility sit when many people share a task?",
@@ -336,9 +352,9 @@ const mindProfiles: Record<string, MindProfile> = {
   },
   "DM-06": {
     biography:
-      "Carl Gustav Jung (1875–1961) was a Swiss psychiatrist who developed analytical psychology after an early collaboration with Sigmund Freud. His work explored dreams, symbols, archetypes, psychological types, and the process he called individuation—the development of a more integrated sense of self.",
+      "Carl Gustav Jung (1875–1961) was a Swiss psychiatrist who developed analytical psychology after an early collaboration with Sigmund Freud. His work explored dreams, symbols, archetypes, psychological types, and individuation.",
     context:
-      "Jung's concepts remain influential in literature, art, and self-reflection, but many are difficult to test scientifically and are not equivalent to established clinical findings. The “shadow” can be used as a reflective metaphor, not as a diagnosis or a complete explanation of behaviour.",
+      "Jung's concepts remain influential in literature, art, and self-reflection, but many are difficult to test scientifically. The “shadow” can be used as a reflective metaphor, not as a diagnosis.",
     keyIdeas: [
       "The shadow names traits or impulses a person may reject or fail to recognise in themselves.",
       "Dreams and symbols can be explored as meaningful personal material, though interpretations are not universal facts.",
@@ -389,6 +405,7 @@ function Logo({ onClick }: { onClick: () => void }) {
       className="dm-logo"
       onClick={onClick}
       aria-label="Dangerous Mind home"
+      type="button"
     >
       <span className="dm-logo-symbol" aria-hidden="true">
         <i />
@@ -406,16 +423,23 @@ export default function App() {
   const [modal, setModal] = useState<ModalKind>(null);
   const [selectedCase, setSelectedCase] = useState<CaseFile>(cases[0]);
 
-  // Profile cards are now loaded from the Express API.
   const [minds, setMinds] = useState<MindCard[]>([]);
   const [selectedMind, setSelectedMind] = useState<MindCard | null>(null);
   const [mindsLoading, setMindsLoading] = useState(true);
   const [mindsError, setMindsError] = useState("");
 
+  const [authMode, setAuthMode] = useState<AuthMode>("login");
+  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [authUser, setAuthUser] = useState<AuthUser | null>(null);
+  const [authLoading, setAuthLoading] = useState(false);
+  const [authChecking, setAuthChecking] = useState(true);
   const [loginError, setLoginError] = useState("");
-  const [loggedIn, setLoggedIn] = useState(false);
+  const [authMessage, setAuthMessage] = useState("");
+
+  const loggedIn = authUser !== null;
+
   const [soundNoteVisible, setSoundNoteVisible] = useState(true);
   const [showThreshold, setShowThreshold] = useState(false);
   const [showTransition, setShowTransition] = useState(false);
@@ -424,6 +448,12 @@ export default function App() {
   const [answer, setAnswer] = useState("");
   const [savedStatus, setSavedStatus] = useState("");
 
+  const [reflections, setReflections] = useState<SavedReflection[]>([]);
+  const [reflectionsLoading, setReflectionsLoading] = useState(false);
+  const [reflectionsError, setReflectionsError] = useState("");
+  const [reflectionSaving, setReflectionSaving] = useState(false);
+  const [deletingReflectionId, setDeletingReflectionId] = useState<string | null>(null);
+
   const currentCase = cases[activeCase];
 
   const currentWorld = useMemo(
@@ -431,7 +461,44 @@ export default function App() {
     [worldId],
   );
 
-  // Fetch the profiles from Express, which reads them from MongoDB.
+  // Restore the current user from the server-managed session.
+  useEffect(() => {
+    const controller = new AbortController();
+
+    async function restoreSession() {
+      try {
+        const response = await fetch("/api/auth/me", {
+          method: "GET",
+          credentials: "include",
+          signal: controller.signal,
+          headers: { Accept: "application/json" },
+        });
+
+        if (response.status === 401) {
+          setAuthUser(null);
+          return;
+        }
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.error || data.message || "Unable to check your session.");
+        }
+
+        setAuthUser(data.user ?? null);
+      } catch (error) {
+        if (error instanceof Error && error.name === "AbortError") return;
+        console.error("Session check failed:", error);
+      } finally {
+        if (!controller.signal.aborted) setAuthChecking(false);
+      }
+    }
+
+    void restoreSession();
+    return () => controller.abort();
+  }, []);
+
+  // Load profile cards from Express.
   useEffect(() => {
     const controller = new AbortController();
 
@@ -456,24 +523,76 @@ export default function App() {
 
         setMinds(data.profiles);
       } catch (error) {
-        if (error instanceof Error && error.name === "AbortError") {
-          return;
-        }
-
+        if (error instanceof Error && error.name === "AbortError") return;
         console.error("Failed to load profiles:", error);
         setMindsError("Unable to load profiles. Please try again.");
       } finally {
-        if (!controller.signal.aborted) {
-          setMindsLoading(false);
-        }
+        if (!controller.signal.aborted) setMindsLoading(false);
       }
     }
 
     void loadMinds();
-
     return () => controller.abort();
   }, []);
 
+  // Load reflections belonging to the currently authenticated account.
+  const loadReflections = useCallback(
+    async (signal?: AbortSignal) => {
+      if (!authUser?.id) {
+        setReflections([]);
+        setReflectionsError("");
+        setReflectionsLoading(false);
+        return;
+      }
+
+      try {
+        setReflectionsLoading(true);
+        setReflectionsError("");
+
+        const response = await fetch("/api/reflections", {
+          method: "GET",
+          credentials: "include",
+          signal,
+          headers: { Accept: "application/json" },
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          if (response.status === 401) setAuthUser(null);
+          throw new Error(
+            data.error || data.message || "Unable to load your reflections.",
+          );
+        }
+
+        if (!Array.isArray(data.reflections)) {
+          throw new Error("The server returned an invalid reflections list.");
+        }
+
+        setReflections(data.reflections as SavedReflection[]);
+      } catch (error) {
+        if (error instanceof Error && error.name === "AbortError") return;
+
+        console.error("Failed to load reflections:", error);
+        setReflectionsError(
+          error instanceof Error
+            ? error.message
+            : "Unable to load your reflections.",
+        );
+      } finally {
+        if (!signal?.aborted) setReflectionsLoading(false);
+      }
+    },
+    [authUser?.id],
+  );
+
+  useEffect(() => {
+    const controller = new AbortController();
+    void loadReflections(controller.signal);
+    return () => controller.abort();
+  }, [loadReflections]);
+
+  // Rotate featured case files.
   useEffect(() => {
     if (showThreshold || showTransition || worldId) return;
 
@@ -485,21 +604,22 @@ export default function App() {
     return () => window.clearInterval(timer);
   }, [showThreshold, showTransition, worldId]);
 
+  // Allow Escape to close dialogs.
   useEffect(() => {
     if (!modal && !selectedMind) return;
 
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
+      if (event.key === "Escape" && !authLoading) {
         setModal(null);
         setSelectedMind(null);
       }
     };
 
     window.addEventListener("keydown", onKeyDown);
-
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [modal, selectedMind]);
+  }, [modal, selectedMind, authLoading]);
 
+  // Transition into the selected reflection world.
   useEffect(() => {
     if (!showTransition) return;
 
@@ -549,47 +669,279 @@ export default function App() {
     setSavedStatus("");
   }
 
-  function submitLogin(event: FormEvent<HTMLFormElement>) {
+  function openLogin() {
+    setAuthMode("login");
+    setName("");
+    setEmail("");
+    setPassword("");
+    setLoginError("");
+    setAuthMessage("");
+    setModal("login");
+  }
+
+  function switchAuthMode(mode: AuthMode) {
+    setAuthMode(mode);
+    setName("");
+    setPassword("");
+    setLoginError("");
+    setAuthMessage("");
+  }
+
+  async function submitLogin(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
-    if (!email.trim() || !password.trim()) {
-      setLoginError("Enter an email and password to continue.");
+    // Protect against accidental duplicate submissions.
+    if (authLoading) return;
+
+    setLoginError("");
+    setAuthMessage("");
+
+    const cleanEmail = email.trim().toLowerCase();
+
+    if (!cleanEmail || !password) {
+      setLoginError("Enter your email and password to continue.");
       return;
     }
 
-    setLoggedIn(true);
-    setLoginError("");
-    setModal(null);
-    setEmail("");
-    setPassword("");
+    if (authMode === "register") {
+      if (name.trim().length < 2) {
+        setLoginError("Your name must contain at least 2 characters.");
+        return;
+      }
+
+      if (name.trim().length > 80) {
+        setLoginError("Your name cannot exceed 80 characters.");
+        return;
+      }
+
+      if (password.length < 12) {
+        setLoginError("Your password must contain at least 12 characters.");
+        return;
+      }
+
+      if (password.length > 128) {
+        setLoginError("Your password cannot exceed 128 characters.");
+        return;
+      }
+    }
+
+    setAuthLoading(true);
+
+    try {
+      const endpoint =
+        authMode === "register" ? "/api/auth/register" : "/api/auth/login";
+
+      const payload =
+        authMode === "register"
+          ? { name: name.trim(), email: cleanEmail, password }
+          : { email: cleanEmail, password };
+
+      const response = await fetch(endpoint, {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
+
+      let data: {
+        error?: string;
+        message?: string;
+        user?: AuthUser;
+      };
+
+      try {
+        data = await response.json();
+      } catch {
+        throw new Error(
+          `The server returned an empty or invalid response (HTTP ${response.status}). Please try again.`,
+        );
+      }
+
+      if (!response.ok) {
+        throw new Error(
+          data.error || data.message || "Authentication failed.",
+        );
+      }
+
+      if (!data.user || !data.user.id || !data.user.email) {
+        throw new Error("The server returned an invalid user response.");
+      }
+
+      setAuthUser(data.user as AuthUser);
+      setPassword("");
+      setName("");
+      setEmail("");
+      setLoginError("");
+      setAuthMessage("");
+      setModal(null);
+    } catch (error) {
+      console.error("Authentication failed:", error);
+      setLoginError(
+        error instanceof Error
+          ? error.message
+          : "Unable to connect to the authentication server.",
+      );
+    } finally {
+      setAuthLoading(false);
+    }
   }
 
-  function saveReflection() {
+  async function logout() {
+    if (authLoading) return;
+
+    setAuthLoading(true);
+    setLoginError("");
+    setAuthMessage("");
+
+    try {
+      const response = await fetch("/api/auth/logout", {
+        method: "POST",
+        credentials: "include",
+        headers: { Accept: "application/json" },
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || data.message || "Unable to log out.");
+      }
+
+      setAuthUser(null);
+      setName("");
+      setEmail("");
+      setPassword("");
+      setLoginError("");
+      setAuthMessage("YOU HAVE LEFT THE ARCHIVE.");
+      setModal(null);
+    } catch (error) {
+      setLoginError(
+        error instanceof Error ? error.message : "Unable to log out.",
+      );
+    } finally {
+      setAuthLoading(false);
+    }
+  }
+
+  async function saveReflection() {
+    if (reflectionSaving) return;
+
     if (!answer.trim()) {
       setSavedStatus("WRITE A FEW WORDS BEFORE SAVING YOUR REFLECTION.");
       return;
     }
 
+    if (authChecking) {
+      setSavedStatus("CHECKING YOUR ACCOUNT SESSION. PLEASE TRY AGAIN IN A MOMENT.");
+      return;
+    }
+
+    if (!authUser) {
+      setSavedStatus("LOG IN OR CREATE AN ACCOUNT TO SAVE REFLECTIONS PRIVATELY.");
+      openLogin();
+      return;
+    }
+
+    setReflectionSaving(true);
+    setSavedStatus("SAVING YOUR REFLECTION...");
+    setReflectionsError("");
+
     try {
-      const key = "dangerous-mind-reflections";
-
-      const previous = JSON.parse(
-        window.localStorage.getItem(key) || "[]",
-      ) as Array<Record<string, string>>;
-
-      previous.push({
-        world: currentWorld?.title ?? "Unknown",
-        question: currentWorld?.questions[questionIndex] ?? "",
-        answer: answer.trim(),
-        savedAt: new Date().toISOString(),
+      const response = await fetch("/api/reflections", {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        body: JSON.stringify({
+          world: currentWorld?.title ?? "Unknown",
+          question: currentWorld?.questions[questionIndex] ?? "",
+          answer: answer.trim(),
+        }),
       });
 
-      window.localStorage.setItem(key, JSON.stringify(previous));
-      setSavedStatus("REFLECTION SAVED ON THIS DEVICE.");
-    } catch {
+      const data = await response.json();
+
+      if (!response.ok) {
+        if (response.status === 401) {
+          setAuthUser(null);
+          throw new Error("Your session has expired. Please log in again.");
+        }
+
+        throw new Error(
+          data.error || data.message || "Unable to save your reflection.",
+        );
+      }
+
+      if (!data.reflection?.id) {
+        throw new Error("The server did not return the saved reflection.");
+      }
+
+      const savedReflection = data.reflection as SavedReflection;
+
+      setReflections((previous) => [
+        savedReflection,
+        ...previous.filter((item) => item.id !== savedReflection.id),
+      ]);
+      setSavedStatus("REFLECTION SAVED TO YOUR ACCOUNT.");
+    } catch (error) {
+      console.error("Failed to save reflection:", error);
       setSavedStatus(
-        "YOUR BROWSER COULD NOT SAVE THIS REFLECTION. COPY IT SOMEWHERE SAFE.",
+        error instanceof Error
+          ? error.message
+          : "UNABLE TO SAVE YOUR REFLECTION. PLEASE TRY AGAIN.",
       );
+    } finally {
+      setReflectionSaving(false);
+    }
+  }
+
+  async function deleteReflection(reflectionId: string) {
+    if (!reflectionId || deletingReflectionId) return;
+
+    const confirmed = window.confirm(
+      "Delete this saved reflection from your account? This cannot be undone.",
+    );
+
+    if (!confirmed) return;
+
+    setDeletingReflectionId(reflectionId);
+    setReflectionsError("");
+
+    try {
+      const response = await fetch(
+        `/api/reflections/${encodeURIComponent(reflectionId)}`,
+        {
+          method: "DELETE",
+          credentials: "include",
+          headers: { Accept: "application/json" },
+        },
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(
+          data.error || data.message || "Unable to delete this reflection.",
+        );
+      }
+
+      setReflections((previous) =>
+        previous.filter((reflection) => reflection.id !== reflectionId),
+      );
+      setSavedStatus("REFLECTION DELETED FROM YOUR ACCOUNT.");
+    } catch (error) {
+      console.error("Failed to delete reflection:", error);
+      setReflectionsError(
+        error instanceof Error
+          ? error.message
+          : "Unable to delete this reflection. Please try again.",
+      );
+    } finally {
+      setDeletingReflectionId(null);
     }
   }
 
@@ -633,19 +985,24 @@ export default function App() {
         <div className="dm-header-actions">
           <button
             className={`dm-login-button ${loggedIn ? "dm-logged-in" : ""}`}
-            onClick={() => setModal("login")}
+            onClick={openLogin}
+            type="button"
           >
             <span aria-hidden="true">♙</span>
-            {loggedIn ? "MEMBER ACCESS" : "LOG IN"}
+            {authChecking
+              ? "CHECKING SESSION"
+              : loggedIn
+                ? "MEMBER ACCESS"
+                : "LOG IN"}
             {loggedIn && <i className="dm-user-indicator" />}
           </button>
 
           <button
             className="dm-header-button"
             onClick={() => setModal("vault")}
+            type="button"
           >
-            ENTER THE VAULT{" "}
-            <span className="dm-header-button-icon">↗</span>
+            ENTER THE VAULT <span className="dm-header-button-icon">↗</span>
           </button>
         </div>
       </header>
@@ -677,6 +1034,7 @@ export default function App() {
                 setSelectedCase(currentCase);
                 setModal("case");
               }}
+              type="button"
             >
               OPEN THE CASE FILE <Arrow />
             </button>
@@ -684,6 +1042,7 @@ export default function App() {
             <button
               className="dm-secondary-button"
               onClick={() => goTo("about")}
+              type="button"
             >
               <span className="dm-play-icon">↓</span> EXPLORE THE ARCHIVE
             </button>
@@ -781,6 +1140,7 @@ export default function App() {
                 }`}
                 onClick={() => setActiveCase(index)}
                 aria-label={`Show case ${index + 1}`}
+                type="button"
               />
             ))}
           </div>
@@ -788,7 +1148,11 @@ export default function App() {
           <span className="dm-page-caption">CASE FILES</span>
         </div>
 
-        <button className="dm-scroll-hint" onClick={() => goTo("about")}>
+        <button
+          className="dm-scroll-hint"
+          onClick={() => goTo("about")}
+          type="button"
+        >
           SCROLL TO INVESTIGATE <span />
         </button>
       </footer>
@@ -837,6 +1201,7 @@ export default function App() {
             <button
               className="dm-about-link"
               onClick={() => goTo("principles")}
+              type="button"
             >
               READ THE PRINCIPLES <Arrow />
             </button>
@@ -948,6 +1313,7 @@ export default function App() {
             <button
               className="dm-about-link"
               onClick={() => goTo("mind-index")}
+              type="button"
             >
               EXPLORE THE PEOPLE ARCHIVE <Arrow />
             </button>
@@ -971,7 +1337,6 @@ export default function App() {
           </p>
         </div>
 
-        {/* API loading and error states */}
         {mindsLoading && (
           <p className="dm-person-description" role="status">
             LOADING THE PEOPLE ARCHIVE...
@@ -1071,6 +1436,7 @@ export default function App() {
           <button
             className="dm-primary-button dm-about-cta-button"
             onClick={openWorlds}
+            type="button"
           >
             CROSS THE THRESHOLD <Arrow />
           </button>
@@ -1110,6 +1476,7 @@ export default function App() {
               className="dm-profile-close"
               onClick={() => setSelectedMind(null)}
               aria-label="Close person profile"
+              type="button"
             >
               ×
             </button>
@@ -1188,14 +1555,14 @@ export default function App() {
                 <p className="dm-profile-disclaimer">
                   EDITORIAL NOTE: This is an introductory profile, not a
                   complete biography. Interpretations may be contested;
-                  consult the original works and reliable historical
-                  scholarship before treating a claim as settled fact.
+                  consult original works and reliable historical scholarship
+                  before treating a claim as settled fact.
                 </p>
               </section>
 
               <div className="dm-profile-bottom">
                 <span>END OF DOSSIER / {selectedMind.id}</span>
-                <button onClick={() => setSelectedMind(null)}>
+                <button onClick={() => setSelectedMind(null)} type="button">
                   RETURN TO THE PEOPLE ARCHIVE ↗
                 </button>
               </div>
@@ -1209,6 +1576,7 @@ export default function App() {
           className="dm-sound-note"
           onClick={() => setSoundNoteVisible(false)}
           aria-label="Dismiss archive note"
+          type="button"
         >
           <span className="dm-live-dot" /> SOUND IS OFF — THIS EXPERIENCE IS
           DESIGNED TO BE EXPLORED SILENTLY{" "}
@@ -1249,12 +1617,14 @@ export default function App() {
             <button
               className="dm-primary-button dm-choose-world-button"
               onClick={enterWorlds}
+              type="button"
             >
               CHOOSE YOUR WORLD <Arrow />
             </button>
             <button
               className="dm-secondary-button"
               onClick={() => setShowThreshold(false)}
+              type="button"
             >
               RETURN TO THE ARCHIVE
             </button>
@@ -1294,6 +1664,7 @@ export default function App() {
                 setWorldId(null);
                 setShowThreshold(true);
               }}
+              type="button"
             >
               <span className="dm-world-brand-mark">DM</span>
               <span>
@@ -1314,6 +1685,7 @@ export default function App() {
                 setShowThreshold(false);
                 goTo("about");
               }}
+              type="button"
             >
               <span>×</span> EXIT EXPERIENCE
             </button>
@@ -1323,6 +1695,7 @@ export default function App() {
             <button
               className="dm-world-back"
               onClick={() => setWorldId(null)}
+              type="button"
             >
               ← ALL WORLDS
             </button>
@@ -1357,15 +1730,14 @@ export default function App() {
                     onClick={() =>
                       chooseWorld(
                         worlds[
-                          (worlds.findIndex(
-                            (world) => world.id === worldId,
-                          ) +
+                          (worlds.findIndex((world) => world.id === worldId) +
                             worlds.length -
                             1) %
                             worlds.length
                         ].id,
                       )
                     }
+                    type="button"
                   >
                     ← PREVIOUS WORLD
                   </button>
@@ -1374,14 +1746,13 @@ export default function App() {
                     onClick={() =>
                       chooseWorld(
                         worlds[
-                          (worlds.findIndex(
-                            (world) => world.id === worldId,
-                          ) +
+                          (worlds.findIndex((world) => world.id === worldId) +
                             1) %
                             worlds.length
                         ].id,
                       )
                     }
+                    type="button"
                   >
                     NEXT WORLD →
                   </button>
@@ -1414,6 +1785,7 @@ export default function App() {
                         setQuestionIndex(index);
                         setSavedStatus("");
                       }}
+                      type="button"
                     >
                       <span>{String(index + 1).padStart(2, "0")}</span>
                       <span>{question}</span>
@@ -1444,9 +1816,11 @@ export default function App() {
                 <div className="dm-world-journal-actions">
                   <button
                     className="dm-world-action-primary"
-                    onClick={saveReflection}
+                    onClick={() => void saveReflection()}
+                    type="button"
+                    disabled={reflectionSaving}
                   >
-                    SAVE REFLECTION ↗
+                    {reflectionSaving ? "SAVING REFLECTION..." : "SAVE REFLECTION ↗"}
                   </button>
                   <button
                     className="dm-world-action-secondary"
@@ -1454,6 +1828,7 @@ export default function App() {
                       setAnswer("");
                       setSavedStatus("");
                     }}
+                    type="button"
                   >
                     CLEAR
                   </button>
@@ -1464,6 +1839,83 @@ export default function App() {
                     {savedStatus}
                   </p>
                 )}
+
+                <section
+                  className="dm-reflection-archive"
+                  aria-label="Your saved reflections"
+                  style={{ marginTop: "2rem" }}
+                >
+                  <div className="dm-world-kicker">
+                    <span>ACCOUNT ARCHIVE / SAVED REFLECTIONS</span>
+                  </div>
+
+                  {!loggedIn ? (
+                    <p className="dm-world-journal-intro">
+                      Log in to save reflections to your account and access them
+                      again later.
+                    </p>
+                  ) : reflectionsLoading ? (
+                    <p className="dm-world-journal-intro" role="status">
+                      LOADING YOUR SAVED REFLECTIONS...
+                    </p>
+                  ) : reflectionsError ? (
+                    <div role="alert">
+                      <p className="dm-world-saved-status">
+                        {reflectionsError}
+                      </p>
+                      <button
+                        className="dm-world-action-secondary"
+                        type="button"
+                        onClick={() => void loadReflections()}
+                      >
+                        TRY AGAIN
+                      </button>
+                    </div>
+                  ) : reflections.length === 0 ? (
+                    <p className="dm-world-journal-intro">
+                      NO ACCOUNT REFLECTIONS YET. YOUR SAVED ENTRIES WILL
+                      APPEAR HERE.
+                    </p>
+                  ) : (
+                    <div className="dm-world-questions">
+                      {reflections.map((reflection) => (
+                        <article
+                          key={reflection.id}
+                          className="dm-saved-reflection"
+                          style={{
+                            padding: "1rem 0",
+                            borderBottom: "1px solid rgba(255,255,255,0.12)",
+                          }}
+                        >
+                          <div className="dm-world-kicker">
+                            <span>{reflection.world}</span>
+                            <span>
+                              {reflection.savedAt
+                                ? new Date(reflection.savedAt).toLocaleString()
+                                : "SAVED REFLECTION"}
+                            </span>
+                          </div>
+                          <p style={{ fontWeight: 600, margin: "0.75rem 0" }}>
+                            {reflection.question}
+                          </p>
+                          <p style={{ whiteSpace: "pre-wrap", overflowWrap: "anywhere" }}>
+                            {reflection.answer}
+                          </p>
+                          <button
+                            className="dm-world-action-secondary"
+                            type="button"
+                            onClick={() => void deleteReflection(reflection.id)}
+                            disabled={deletingReflectionId !== null}
+                          >
+                            {deletingReflectionId === reflection.id
+                              ? "DELETING..."
+                              : "DELETE REFLECTION"}
+                          </button>
+                        </article>
+                      ))}
+                    </div>
+                  )}
+                </section>
               </div>
             </div>
           </div>
@@ -1476,6 +1928,7 @@ export default function App() {
                 setShowThreshold(false);
                 goTo("about");
               }}
+              type="button"
             >
               RETURN TO THE MAIN ARCHIVE ↗
             </button>
@@ -1488,7 +1941,7 @@ export default function App() {
           className="dm-modal-backdrop"
           role="presentation"
           onMouseDown={(event) => {
-            if (event.target === event.currentTarget) {
+            if (event.target === event.currentTarget && !authLoading) {
               setModal(null);
             }
           }}
@@ -1507,8 +1960,12 @@ export default function App() {
           >
             <button
               className="dm-modal-close"
-              onClick={() => setModal(null)}
+              onClick={() => {
+                if (!authLoading) setModal(null);
+              }}
               aria-label="Close dialog"
+              type="button"
+              disabled={authLoading}
             >
               ×
             </button>
@@ -1541,6 +1998,7 @@ export default function App() {
                     setModal(null);
                     goTo("about");
                   }}
+                  type="button"
                 >
                   CONTINUE INVESTIGATION <Arrow />
                 </button>
@@ -1552,54 +2010,171 @@ export default function App() {
                 <div className="dm-modal-kicker">
                   MEMBER ACCESS / SECURE ENTRY
                 </div>
+
                 <div className="dm-login-symbol">⌑</div>
-                <h2 id="dm-modal-title">
-                  ENTER THE
-                  <br />
-                  <span>ARCHIVE.</span>
-                </h2>
-                <p className="dm-login-description">
-                  This front-end demo uses a local interface only. No account
-                  is created and no credentials are sent to a server.
-                </p>
 
-                <form className="dm-login-form" onSubmit={submitLogin}>
-                  <label htmlFor="dm-email">EMAIL ADDRESS</label>
-                  <input
-                    id="dm-email"
-                    type="email"
-                    value={email}
-                    onChange={(event) => setEmail(event.target.value)}
-                    placeholder="you@example.com"
-                    autoComplete="email"
-                    required
-                  />
+                {loggedIn ? (
+                  <>
+                    <h2 id="dm-modal-title">
+                      WELCOME BACK,
+                      <br />
+                      <span>{authUser.name.toUpperCase()}.</span>
+                    </h2>
 
-                  <label htmlFor="dm-password">PASSWORD</label>
-                  <input
-                    id="dm-password"
-                    type="password"
-                    value={password}
-                    onChange={(event) => setPassword(event.target.value)}
-                    placeholder="Enter any demo password"
-                    autoComplete="current-password"
-                    required
-                  />
+                    <p className="dm-login-description">
+                      Your server session is active. You are signed in as{" "}
+                      {authUser.email}.
+                    </p>
 
-                  {loginError && (
-                    <p className="dm-login-error">{loginError}</p>
-                  )}
+                    {authMessage && (
+                      <p className="dm-login-error" role="status">
+                        {authMessage}
+                      </p>
+                    )}
 
-                  <button className="dm-login-submit" type="submit">
-                    {loggedIn ? "RE-ENTER ARCHIVE" : "CONTINUE AS DEMO MEMBER"}{" "}
-                    <Arrow />
-                  </button>
-                </form>
+                    {loginError && (
+                      <p className="dm-login-error" role="alert">
+                        {loginError}
+                      </p>
+                    )}
 
-                <div className="dm-login-footnote">
-                  <span className="dm-live-dot" /> LOCAL DEMO ONLY — NO SERVER
-                  CONNECTION
-                </div>
+                    <button
+                      className="dm-login-submit"
+                      onClick={() => setModal(null)}
+                      type="button"
+                    >
+                      RETURN TO THE ARCHIVE <Arrow />
+                    </button>
+
+                    <button
+                      className="dm-modal-next"
+                      onClick={() => void logout()}
+                      type="button"
+                      disabled={authLoading}
+                    >
+                      {authLoading ? "SIGNING OUT..." : "LOG OUT"}
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <h2 id="dm-modal-title">
+                      {authMode === "register" ? (
+                        <>
+                          CREATE YOUR
+                          <br />
+                          <span>ACCOUNT.</span>
+                        </>
+                      ) : (
+                        <>
+                          ENTER THE
+                          <br />
+                          <span>ARCHIVE.</span>
+                        </>
+                      )}
+                    </h2>
+
+                    <p className="dm-login-description">
+                      {authMode === "register"
+                        ? "Create an account to establish your member access."
+                        : "Sign in with your account to enter the archive."}
+                    </p>
+
+                    <form className="dm-login-form" onSubmit={submitLogin}>
+                      {authMode === "register" && (
+                        <>
+                          <label htmlFor="dm-name">YOUR NAME</label>
+                          <input
+                            id="dm-name"
+                            type="text"
+                            value={name}
+                            onChange={(event) => setName(event.target.value)}
+                            placeholder="Enter your name"
+                            autoComplete="name"
+                            minLength={2}
+                            maxLength={80}
+                            required
+                            disabled={authLoading}
+                          />
+                        </>
+                      )}
+
+                      <label htmlFor="dm-email">EMAIL ADDRESS</label>
+                      <input
+                        id="dm-email"
+                        type="email"
+                        value={email}
+                        onChange={(event) => setEmail(event.target.value)}
+                        placeholder="you@example.com"
+                        autoComplete="email"
+                        maxLength={254}
+                        required
+                        disabled={authLoading}
+                      />
+
+                      <label htmlFor="dm-password">PASSWORD</label>
+                      <input
+                        id="dm-password"
+                        type="password"
+                        value={password}
+                        onChange={(event) => setPassword(event.target.value)}
+                        placeholder={
+                          authMode === "register"
+                            ? "At least 12 characters"
+                            : "Enter your password"
+                        }
+                        autoComplete={
+                          authMode === "register"
+                            ? "new-password"
+                            : "current-password"
+                        }
+                        minLength={authMode === "register" ? 12 : undefined}
+                        maxLength={128}
+                        required
+                        disabled={authLoading}
+                      />
+
+                      {loginError && (
+                        <p className="dm-login-error" role="alert">
+                          {loginError}
+                        </p>
+                      )}
+
+                      <button
+                        className="dm-login-submit"
+                        type="submit"
+                        disabled={authLoading}
+                      >
+                        {authLoading
+                          ? "PLEASE WAIT..."
+                          : authMode === "register"
+                            ? "CREATE ACCOUNT"
+                            : "LOG IN TO THE ARCHIVE"}{" "}
+                        {!authLoading && <Arrow />}
+                      </button>
+                    </form>
+
+                    <button
+                      className="dm-about-link"
+                      type="button"
+                      disabled={authLoading}
+                      onClick={() =>
+                        switchAuthMode(
+                          authMode === "login" ? "register" : "login",
+                        )
+                      }
+                    >
+                      {authMode === "register"
+                        ? "ALREADY HAVE AN ACCOUNT? LOG IN"
+                        : "NEW HERE? CREATE AN ACCOUNT"}{" "}
+                      <Arrow />
+                    </button>
+
+                    <div className="dm-login-footnote">
+                      <span className="dm-live-dot" /> CONNECTED TO THE
+                      DANGEROUS MIND SERVER
+                    </div>
+                  </>
+                )}
               </>
             )}
 
@@ -1646,6 +2221,7 @@ export default function App() {
                     setModal(null);
                     openWorlds();
                   }}
+                  type="button"
                 >
                   OPEN THE REFLECTION WORLDS <Arrow />
                 </button>

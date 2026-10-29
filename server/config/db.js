@@ -14,6 +14,7 @@ async function connectDB() {
   }
 
   await client.connect();
+
   database = client.db('dangerous_mind');
 
   console.log('MongoDB connected to dangerous_mind');
@@ -29,4 +30,13 @@ function getDB() {
   return database;
 }
 
-module.exports = { connectDB, getDB };
+async function closeDB() {
+  await client.close();
+  database = undefined;
+}
+
+module.exports = {
+  connectDB,
+  getDB,
+  closeDB
+};
