@@ -1,9 +1,11 @@
 
+require('dotenv').config();
+
 const { MongoClient } = require('mongodb');
 const profiles = require('../shared/profiles.json');
 
 const MONGO_URI =
-  process.env.MONGO_URI || 'mongodb://127.0.0.1:27017';
+  process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017';
 
 async function seedProfiles() {
   const client = new MongoClient(MONGO_URI);

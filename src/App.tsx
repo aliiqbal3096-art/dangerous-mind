@@ -1,7 +1,8 @@
-
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { FormEvent } from "react";
 import "./App.css";
+
+const IMAGE_BASE = `${import.meta.env.BASE_URL}images`;
 
 type ModalKind = "login" | "vault" | "case" | null;
 type WorldId = "inner" | "abyss" | "archive" | "unknown";
@@ -452,7 +453,9 @@ export default function App() {
   const [reflectionsLoading, setReflectionsLoading] = useState(false);
   const [reflectionsError, setReflectionsError] = useState("");
   const [reflectionSaving, setReflectionSaving] = useState(false);
-  const [deletingReflectionId, setDeletingReflectionId] = useState<string | null>(null);
+  const [deletingReflectionId, setDeletingReflectionId] = useState<
+    string | null
+  >(null);
 
   const currentCase = cases[activeCase];
 
@@ -482,7 +485,9 @@ export default function App() {
         const data = await response.json();
 
         if (!response.ok) {
-          throw new Error(data.error || data.message || "Unable to check your session.");
+          throw new Error(
+            data.error || data.message || "Unable to check your session.",
+          );
         }
 
         setAuthUser(data.user ?? null);
@@ -498,7 +503,7 @@ export default function App() {
     return () => controller.abort();
   }, []);
 
-  // Load profile cards from Express.
+  // Load profile cards from Express and correct their image URLs.
   useEffect(() => {
     const controller = new AbortController();
 
@@ -521,7 +526,16 @@ export default function App() {
           throw new Error("The API returned an invalid profiles list.");
         }
 
-        setMinds(data.profiles);
+        // Convert API image paths such as "/images/steve-jobs.jpg.png"
+        // into paths that respect the Vite base URL.
+        const profilesWithCorrectImages = data.profiles.map((profile) => ({
+          ...profile,
+          image: profile.image.startsWith("http")
+            ? profile.image
+            : `${import.meta.env.BASE_URL}${profile.image.replace(/^\/+/, "")}`,
+        }));
+
+        setMinds(profilesWithCorrectImages);
       } catch (error) {
         if (error instanceof Error && error.name === "AbortError") return;
         console.error("Failed to load profiles:", error);
@@ -834,12 +848,16 @@ export default function App() {
     }
 
     if (authChecking) {
-      setSavedStatus("CHECKING YOUR ACCOUNT SESSION. PLEASE TRY AGAIN IN A MOMENT.");
+      setSavedStatus(
+        "CHECKING YOUR ACCOUNT SESSION. PLEASE TRY AGAIN IN A MOMENT.",
+      );
       return;
     }
 
     if (!authUser) {
-      setSavedStatus("LOG IN OR CREATE AN ACCOUNT TO SAVE REFLECTIONS PRIVATELY.");
+      setSavedStatus(
+        "LOG IN OR CREATE AN ACCOUNT TO SAVE REFLECTIONS PRIVATELY.",
+      );
       openLogin();
       return;
     }
@@ -964,7 +982,7 @@ export default function App() {
               index === activeCase ? "active" : ""
             }`}
             style={{
-              backgroundImage: `url('/images/horror-${index + 1}.jpg')`,
+              backgroundImage: `url('${IMAGE_BASE}/horror-${index + 1}.jpg')`,
             }}
           />
         ))}
@@ -1211,7 +1229,7 @@ export default function App() {
         <div className="dm-about-visual">
           <div className="dm-about-image">
             <img
-              src="/images/horror-2.jpg"
+              src={`${IMAGE_BASE}/horror-2.jpg`}
               alt="A dark, atmospheric archival scene"
             />
             <div className="dm-about-image-overlay" />
@@ -1282,7 +1300,7 @@ export default function App() {
         <div className="dm-about-reflection" id="dangerous-minds">
           <div className="dm-reflection-image">
             <img
-              src="/images/horror-3.jpg"
+              src={`${IMAGE_BASE}/horror-3.jpg`}
               alt="A shadowed figure in an atmospheric archive"
             />
             <div className="dm-reflection-image-shade" />
@@ -1593,8 +1611,7 @@ export default function App() {
           <div
             className="dm-threshold-visual"
             style={{
-              backgroundImage:
-                "linear-gradient(180deg, rgba(5,5,5,.12), rgba(5,5,5,.8)), url('/images/threshold.jpg')",
+              backgroundImage: `linear-gradient(180deg, rgba(5,5,5,.12), rgba(5,5,5,.8)), url('${IMAGE_BASE}/horror-4.jpg')`,
             }}
           >
             <div className="dm-threshold-particles" aria-hidden="true" />
@@ -1820,7 +1837,9 @@ export default function App() {
                     type="button"
                     disabled={reflectionSaving}
                   >
-                    {reflectionSaving ? "SAVING REFLECTION..." : "SAVE REFLECTION ↗"}
+                    {reflectionSaving
+                      ? "SAVING REFLECTION..."
+                      : "SAVE REFLECTION ↗"}
                   </button>
                   <button
                     className="dm-world-action-secondary"
@@ -1851,8 +1870,8 @@ export default function App() {
 
                   {!loggedIn ? (
                     <p className="dm-world-journal-intro">
-                      Log in to save reflections to your account and access them
-                      again later.
+                      Log in to save reflections to your account and access
+                      them again later.
                     </p>
                   ) : reflectionsLoading ? (
                     <p className="dm-world-journal-intro" role="status">
@@ -1891,20 +1910,34 @@ export default function App() {
                             <span>{reflection.world}</span>
                             <span>
                               {reflection.savedAt
-                                ? new Date(reflection.savedAt).toLocaleString()
+                                ? new Date(
+                                    reflection.savedAt,
+                                  ).toLocaleString()
                                 : "SAVED REFLECTION"}
                             </span>
                           </div>
-                          <p style={{ fontWeight: 600, margin: "0.75rem 0" }}>
+                          <p
+                            style={{
+                              fontWeight: 600,
+                              margin: "0.75rem 0",
+                            }}
+                          >
                             {reflection.question}
                           </p>
-                          <p style={{ whiteSpace: "pre-wrap", overflowWrap: "anywhere" }}>
+                          <p
+                            style={{
+                              whiteSpace: "pre-wrap",
+                              overflowWrap: "anywhere",
+                            }}
+                          >
                             {reflection.answer}
                           </p>
                           <button
                             className="dm-world-action-secondary"
                             type="button"
-                            onClick={() => void deleteReflection(reflection.id)}
+                            onClick={() =>
+                              void deleteReflection(reflection.id)
+                            }
                             disabled={deletingReflectionId !== null}
                           >
                             {deletingReflectionId === reflection.id
