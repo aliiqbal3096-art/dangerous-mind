@@ -3,6 +3,7 @@ import type { FormEvent } from "react";
 import "./App.css";
 
 const IMAGE_BASE = `${import.meta.env.BASE_URL}images`;
+const API_BASE = "https://dangerous-mind.vercel.app";
 
 type ModalKind = "login" | "vault" | "case" | null;
 type WorldId = "inner" | "abyss" | "archive" | "unknown";
@@ -470,7 +471,7 @@ export default function App() {
 
     async function restoreSession() {
       try {
-        const response = await fetch("/api/auth/me", {
+        const response = await fetch(`${API_BASE}/api/auth/me`, {
           method: "GET",
           credentials: "include",
           signal: controller.signal,
@@ -512,7 +513,7 @@ export default function App() {
         setMindsLoading(true);
         setMindsError("");
 
-        const response = await fetch("/api/profiles", {
+        const response = await fetch(`${API_BASE}/api/profiles`, {
           signal: controller.signal,
         });
 
@@ -526,8 +527,7 @@ export default function App() {
           throw new Error("The API returned an invalid profiles list.");
         }
 
-        // Convert API image paths such as "/images/steve-jobs.jpg.png"
-        // into paths that respect the Vite base URL.
+        // Convert API image paths into paths that respect the Vite base URL.
         const profilesWithCorrectImages = data.profiles.map((profile) => ({
           ...profile,
           image: profile.image.startsWith("http")
@@ -563,7 +563,7 @@ export default function App() {
         setReflectionsLoading(true);
         setReflectionsError("");
 
-        const response = await fetch("/api/reflections", {
+        const response = await fetch(`${API_BASE}/api/reflections`, {
           method: "GET",
           credentials: "include",
           signal,
@@ -704,7 +704,6 @@ export default function App() {
   async function submitLogin(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
-    // Protect against accidental duplicate submissions.
     if (authLoading) return;
 
     setLoginError("");
@@ -743,7 +742,9 @@ export default function App() {
 
     try {
       const endpoint =
-        authMode === "register" ? "/api/auth/register" : "/api/auth/login";
+        authMode === "register"
+          ? `${API_BASE}/api/auth/register`
+          : `${API_BASE}/api/auth/login`;
 
       const payload =
         authMode === "register"
@@ -811,7 +812,7 @@ export default function App() {
     setAuthMessage("");
 
     try {
-      const response = await fetch("/api/auth/logout", {
+      const response = await fetch(`${API_BASE}/api/auth/logout`, {
         method: "POST",
         credentials: "include",
         headers: { Accept: "application/json" },
@@ -867,7 +868,7 @@ export default function App() {
     setReflectionsError("");
 
     try {
-      const response = await fetch("/api/reflections", {
+      const response = await fetch(`${API_BASE}/api/reflections`, {
         method: "POST",
         credentials: "include",
         headers: {
@@ -931,7 +932,7 @@ export default function App() {
 
     try {
       const response = await fetch(
-        `/api/reflections/${encodeURIComponent(reflectionId)}`,
+        `${API_BASE}/api/reflections/${encodeURIComponent(reflectionId)}`,
         {
           method: "DELETE",
           credentials: "include",
